@@ -1,0 +1,212 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+}
+
+model User {
+    id           String        @id @default(cuid())
+    email        String        @unique
+    passwordHash String
+    firstName    String
+    lastName     String
+    role         Role          @default(CUSTOMER)
+    createdAt    DateTime      @default(now())
+    updatedAt    DateTime      @updatedAt
+    deletedAt    DateTime?
+    cart         Cart?
+    orders       Order[]
+    subscription Subscription?
+
+    @@index([email])
+    @@index([deletedAt])
+}
+
+enum Role {
+    CUSTOMER
+    ADMIN
+}
+
+model Category {
+    id       String    @id @default(cuid())
+    name     String    @unique
+    products Product[]
+}
+
+model Product {
+    id          String  @id @default(cuid())
+    name        String
+    description String?
+    slug        String  @unique
+    price       Int // in smallest currency unit (kobo / cents)
+    imageUrl    String?
+    isActive    Boolean @default(true)
+
+    categoryId String
+    category   Category @relation(fields: [categoryId], references: [id])
+
+    inventory  Inventory?
+    cartItems  CartItem[]
+    orderItems OrderItem[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([categoryId, isActive])
+    @@index([slug])
+}
+
+model Inventory {
+    id        String  @id @default(cuid())
+    productId String  @unique
+    product   Product @relation(fields: [productId], references: [id])
+    quantity  Int     @default(0)
+    reserved  Int     @default(0) // locked during pending orders
+
+    @@index([productId])
+}
+
+// ─── Cart ─────────────────────────────────────────────────────────────────────
+
+model Cart {
+    id         String     @id @default(cuid())
+    userId     String     @unique
+    user       User       @relation(fields: [userId], references: [id])
+    discountId String?
+    discount   Discount?  @relation(fields: [discountId], references: [id])
+    items      CartItem[]
+    updatedAt  DateTime   @updatedAt
+}
+
+model CartItem {
+    id        String  @id @default(cuid())
+    cartId    String
+    cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+    productId String
+    product   Product @relation(fields: [productId], references: [id])
+    quantity  Int
+
+    @@unique([cartId, productId])
+}
+
+// ─── Discounts ────────────────────────────────────────────────────────────────
+
+model Discount {
+    id    String       @id @default(cuid())
+    code  String       @unique
+    type  DiscountType
+    value Int // percent (0-100) or flat amount in cents/kobo
+
+    maxUses   Int?
+    timesUsed Int       @default(0)
+    expiresAt DateTime?
+    isActive  Boolean   @default(true)
+    carts     Cart[]
+    orders    Order[]
+
+    createdAt DateTime @default(now())
+}
+
+enum DiscountType {
+    PERCENTAGE
+    FLAT
+}
+
+// ─── Orders ───────────────────────────────────────────────────────────────────
+
+model Order {
+    id             String          @id @default(cuid())
+    userId         String
+    user           User            @relation(fields: [userId], references: [id])
+    items          OrderItem[]
+    discountId     String?
+    discount       Discount?       @relation(fields: [discountId], references: [id])
+    subtotal       Int
+    discountAmount Int             @default(0)
+    total          Int
+    currency       String          @default("NGN")
+    status         OrderStatus     @default(PENDING)
+    provider       PaymentProvider
+    providerRef    String?         @unique // Stripe/Paystack session or reference ID
+    metadata       Json?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([userId, status])
+    @@index([providerRef])
+}
+
+model OrderItem {
+    id        String  @id @default(cuid())
+    orderId   String
+    order     Order   @relation(fields: [orderId], references: [id])
+    productId String
+    product   Product @relation(fields: [productId], references: [id])
+    quantity  Int
+    unitPrice Int // snapshot price at time of order
+}
+
+enum OrderStatus {
+    PENDING // checkout session created
+    PAID // webhook confirmed payment
+    FULFILLED // shipped / delivered
+
+    CANCELED
+    REFUNDED
+}
+
+enum PaymentProvider {
+    STRIPE
+    PAYSTACK
+}
+
+// ─── SaaS Plans ───────────────────────────────────────────────────────────────
+
+model Plan {
+    id               String         @id @default(cuid())
+    name             String         @unique // "free" | "pro" | "enterprise"
+    displayName      String
+    stripePriceId    String?        @unique
+    paystackPlanCode String?        @unique
+    priceMonthly     Int // in cents/kobo
+    priceYearly      Int
+    features         Json // { api_calls: 10000, team_members: 5, ... }
+    isActive         Boolean        @default(true)
+    subscriptions    Subscription[]
+}
+
+model Subscription {
+    id                     String             @id @default(cuid())
+    userId                 String             @unique
+    user                   User               @relation(fields: [userId], references: [id])
+    planId                 String
+    plan                   Plan               @relation(fields: [planId], references: [id])
+    provider               PaymentProvider
+    providerSubscriptionId String             @unique
+    status                 SubscriptionStatus
+    currentPeriodStart     DateTime
+    currentPeriodEnd       DateTime
+    cancelAtPeriodEnd      Boolean            @default(false)
+    interval               BillingInterval    @default(MONTHLY)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([userId, status])
+}
+
+enum SubscriptionStatus {
+    TRIALING
+    ACTIVE
+    PAST_DUE
+    CANCELED
+    INCOMPLETE
+}
+
+enum BillingInterval {
+    MONTHLY
+    YEARLY
+}
