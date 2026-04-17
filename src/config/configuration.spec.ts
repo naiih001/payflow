@@ -14,6 +14,10 @@ describe('validateEnvironment', () => {
       JWT_SECRET: 'test-secret',
       JWT_EXPIRES_IN: '1h',
       DATABASE_URL: 'postgresql://localhost/payflow',
+      STRIPE_SECRET_KEY: undefined,
+      STRIPE_WEBHOOK_SECRET: undefined,
+      PAYSTACK_SECRET_KEY: undefined,
+      PAYSTACK_BASE_URL: 'https://api.paystack.co',
     });
   });
 

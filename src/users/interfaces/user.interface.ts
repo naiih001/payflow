@@ -10,4 +10,7 @@ export interface CreateUserInput {
   role: Role;
 }
 
-export type PublicUser = Omit<User, 'passwordHash'>;
+export type PublicUser = Omit<
+  User,
+  'passwordHash' | 'stripeCustomerId' | 'paystackCustomerId'
+>;

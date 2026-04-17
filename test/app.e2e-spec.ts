@@ -86,15 +86,15 @@ describe('Application wiring (e2e)', () => {
         password: 'CustomerPass123',
       }),
     ).resolves.toEqual({
-        accessToken: 'token',
-        user: {
-          sub: 'user-1',
-          email: 'customer@payflow.dev',
-          role: Role.CUSTOMER,
-          firstName: 'Ada',
-          lastName: 'Lovelace',
-        },
-      });
+      accessToken: 'token',
+      user: {
+        sub: 'user-1',
+        email: 'customer@payflow.dev',
+        role: Role.CUSTOMER,
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+      },
+    });
 
     expect(authService.login).toHaveBeenCalledWith({
       email: 'customer@payflow.dev',

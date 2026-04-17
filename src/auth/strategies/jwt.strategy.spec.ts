@@ -14,6 +14,8 @@ describe('JwtStrategy', () => {
     lastName: 'User',
     passwordHash: 'stored-hash',
     role: Role.ADMIN,
+    stripeCustomerId: null,
+    paystackCustomerId: null,
     createdAt: new Date('2024-01-01T00:00:00.000Z'),
     updatedAt: new Date('2024-01-01T00:00:00.000Z'),
     deletedAt: null,
@@ -34,6 +36,10 @@ describe('JwtStrategy', () => {
       },
       database: {
         url: 'postgresql://localhost/payflow',
+      },
+      stripe: {},
+      paystack: {
+        baseUrl: 'https://api.paystack.co',
       },
     } satisfies ReturnType<typeof configuration>);
   });

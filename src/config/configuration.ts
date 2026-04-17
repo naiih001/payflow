@@ -9,6 +9,10 @@ export interface EnvironmentVariables {
   JWT_SECRET: string;
   JWT_EXPIRES_IN: string;
   DATABASE_URL: string;
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
+  PAYSTACK_SECRET_KEY?: string;
+  PAYSTACK_BASE_URL: string;
 }
 
 export interface AppConfig {
@@ -22,12 +26,21 @@ export interface AppConfig {
   database: {
     url: string;
   };
+  stripe: {
+    secretKey?: string;
+    webhookSecret?: string;
+  };
+  paystack: {
+    secretKey?: string;
+    baseUrl: string;
+  };
 }
 
 const DEFAULT_ENVIRONMENT: NodeEnvironment = 'development';
 const DEFAULT_PORT = 3000;
 const DEFAULT_API_PREFIX = 'api';
 const DEFAULT_JWT_EXPIRES_IN = '1h';
+const DEFAULT_PAYSTACK_BASE_URL = 'https://api.paystack.co';
 
 function toNonEmptyString(
   value: unknown,
@@ -48,11 +61,7 @@ function toNonEmptyString(
 }
 
 function toNodeEnvironment(value: unknown, errors: string[]): NodeEnvironment {
-  if (
-    value === 'development' ||
-    value === 'test' ||
-    value === 'production'
-  ) {
+  if (value === 'development' || value === 'test' || value === 'production') {
     return value;
   }
 
@@ -78,6 +87,15 @@ function toPort(value: unknown, errors: string[]): number {
   return DEFAULT_PORT;
 }
 
+function toOptionalNonEmptyString(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
 export function validateEnvironment(
   config: Record<string, unknown>,
 ): EnvironmentVariables {
@@ -100,6 +118,17 @@ export function validateEnvironment(
       DEFAULT_JWT_EXPIRES_IN,
     ),
     DATABASE_URL: toNonEmptyString(config.DATABASE_URL, 'DATABASE_URL', errors),
+    STRIPE_SECRET_KEY: toOptionalNonEmptyString(config.STRIPE_SECRET_KEY),
+    STRIPE_WEBHOOK_SECRET: toOptionalNonEmptyString(
+      config.STRIPE_WEBHOOK_SECRET,
+    ),
+    PAYSTACK_SECRET_KEY: toOptionalNonEmptyString(config.PAYSTACK_SECRET_KEY),
+    PAYSTACK_BASE_URL: toNonEmptyString(
+      config.PAYSTACK_BASE_URL,
+      'PAYSTACK_BASE_URL',
+      errors,
+      DEFAULT_PAYSTACK_BASE_URL,
+    ),
   };
 
   if (errors.length > 0) {
@@ -124,6 +153,14 @@ export default registerAs('app', (): AppConfig => {
     },
     database: {
       url: env.DATABASE_URL,
+    },
+    stripe: {
+      secretKey: env.STRIPE_SECRET_KEY,
+      webhookSecret: env.STRIPE_WEBHOOK_SECRET,
+    },
+    paystack: {
+      secretKey: env.PAYSTACK_SECRET_KEY,
+      baseUrl: env.PAYSTACK_BASE_URL,
     },
   };
 });

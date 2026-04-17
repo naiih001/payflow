@@ -7,18 +7,20 @@ datasource db {
 }
 
 model User {
-    id           String        @id @default(cuid())
-    email        String        @unique
-    passwordHash String
-    firstName    String
-    lastName     String
-    role         Role          @default(CUSTOMER)
-    createdAt    DateTime      @default(now())
-    updatedAt    DateTime      @updatedAt
-    deletedAt    DateTime?
-    cart         Cart?
-    orders       Order[]
-    subscription Subscription?
+    id                 String        @id @default(cuid())
+    email              String        @unique
+    passwordHash       String
+    firstName          String
+    lastName           String
+    role               Role          @default(CUSTOMER)
+    stripeCustomerId   String?       @unique
+    paystackCustomerId String?       @unique
+    createdAt          DateTime      @default(now())
+    updatedAt          DateTime      @updatedAt
+    deletedAt          DateTime?
+    cart               Cart?
+    orders             Order[]
+    subscription       Subscription?
 
     @@index([email])
     @@index([deletedAt])
@@ -191,6 +193,7 @@ model Subscription {
     currentPeriodEnd       DateTime
     cancelAtPeriodEnd      Boolean            @default(false)
     interval               BillingInterval    @default(MONTHLY)
+    providerSubscriptionToken String?
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
