@@ -1,7 +1,12 @@
 import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateUserInput, PublicUser, Role, User } from './interfaces/user.interface';
+import {
+  CreateUserInput,
+  PublicUser,
+  Role,
+  User,
+} from './interfaces/user.interface';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -12,7 +17,7 @@ export class UsersService implements OnModuleInit {
   }
 
   async findByEmail(email: string): Promise<User | undefined> {
-    return this.prisma.user.findFirst({
+    const user = await this.prisma.user.findFirst({
       where: {
         email: {
           equals: email,
@@ -21,15 +26,19 @@ export class UsersService implements OnModuleInit {
         deletedAt: null,
       },
     });
+
+    return user ?? undefined;
   }
 
   async findById(userId: string): Promise<User | undefined> {
-    return this.prisma.user.findFirst({
+    const user = await this.prisma.user.findFirst({
       where: {
         id: userId,
         deletedAt: null,
       },
     });
+
+    return user ?? undefined;
   }
 
   async findByIdOrFail(userId: string): Promise<User> {
